@@ -37,6 +37,7 @@ func main() {
 		logger:   logger,
 		snippets: &models.SnippetModel{DB: db},
 	}
+
 	logger.Info("Starting server", "addr", *addr)
 
 	//start a new server. We pass in the TCP network and the servermux. if returns an error we log it.s
