@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/go-playground/form/v4"
 	"github.com/julienschmidt/httprouter"
 
 	"snippetbox.simonoro1/internal/models"
@@ -67,33 +68,44 @@ func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 type snippetCreateForm struct {
-	Title   string
-	Content string
-	Expires int
-	validator.Validator
+	Title               string `form:"title"`
+	Content             string `form:"content"`
+	Expires             int    `from:"expires"`
+	validator.Validator `form:"-"`
 }
 
-func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) { // First we call r.ParseForm() which adds any data in POST request bodies
-	// to the r.PostForm map. This also works in the same way for PUT and PATCH
-	// requests. If there are any errors, we use our app.ClientError() helper to
-	// send a 400 Bad Request response to the user.
+func (app *application) decodePostForm(r *http.Request, dst any) error {
+
 	err := r.ParseForm()
 	if err != nil {
-		app.clientError(w, http.StatusBadRequest)
-		return
+		return err
 	}
-	// Use the r.PostForm.Get() method to retrieve the title and content // from the r.PostForm map.
-	// The r.PostForm.Get() method always returns the form data as a *string*. // However, we're expecting our expires value to be a number, and want to // represent it in our Go code as an integer. So we need to manually covert // the form data to an integer using strconv.Atoi(), and we send a 400 Bad // Request response if the conversion fails.
-	expires, err := strconv.Atoi(r.PostForm.Get("expires"))
+
+	err = app.formDecoder.Decode(dst, r.PostForm)
+	if err != nil {
+		// If we try to use an invalid target destination, the Decode() method
+		// will return an error with the type *form.InvalidDecoderError.We use
+		// errors.As() to check for this and raise a panic rather than returning
+		// the error.
+		var invalidDecoderError *form.InvalidDecoderError
+		if errors.As(err, &invalidDecoderError) {
+			panic(err)
+		}
+		// For all other errors, we return them as normal.
+		return err
+	}
+
+	return nil
+}
+
+func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
+
+	var form snippetCreateForm
+
+	err := app.decodePostForm(r, &form)
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
-	}
-
-	form := snippetCreateForm{
-		Title:   r.PostForm.Get("title"),
-		Content: r.PostForm.Get("content"),
-		Expires: expires,
 	}
 
 	form.CheckField(validator.NotBlank(form.Title), "title", "This field cannot be blank")
