@@ -134,3 +134,15 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "signin")
 }
+
+func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "create new user")
+}
+
+func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Login")
+}
+
+func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "auth")
+}
