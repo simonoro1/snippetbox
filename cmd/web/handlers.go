@@ -131,12 +131,47 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
 
+type userSignUpForm struct {
+	Name     string
+	Email    string
+	Password string
+	validator.Validator
+}
+
 func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "signin")
+
+	var form userSignUpForm
+
+	data := app.newTemplateData(r)
+	data.Form = form
+	app.render(w, r, http.StatusOK, "signup.tmpl.html", data)
 }
 
 func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "create new user")
+	var form userSignUpForm
+
+	err := app.decodePostForm(r, &form)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	// fields validations
+	// form.CheckField()
+
+	if !form.Valid() {
+		data := app.newTemplateData(r)
+		data.Form = form
+		app.render(w, r, http.StatusUnprocessableEntity, "signup.tmpl.html", data)
+		return
+	}
+
+	// insert user
+
+	// app.sessionManager.Put(r.Context(), "flash", "Welcome")
+
+	// http.Redirect(w, r, fmt.Sprintf("/snippetview/%d", id), http.StatusSeeOther)
+
 }
 
 func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
@@ -146,3 +181,8 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "auth")
 }
+
+// signup form struct
+// display form
+// validate fc
+// validate in handler
