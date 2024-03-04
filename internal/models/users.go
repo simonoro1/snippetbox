@@ -8,7 +8,7 @@ import (
 type User struct {
 	ID            int
 	Name          string
-	email         string
+	Email         string
 	HasedPassword []byte
 	Created       time.Time
 }
