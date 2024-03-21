@@ -132,10 +132,10 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 }
 
 type userSignUpForm struct {
-	Name     string
-	Email    string
-	Password string
-	validator.Validator
+	Name                string `form:"name"`
+	Email               string `form:"email"`
+	Password            string `form:"password"`
+	validator.Validator `form:"-"`
 }
 
 func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
@@ -148,6 +148,7 @@ func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
+
 	var form userSignUpForm
 
 	err := app.decodePostForm(r, &form)
@@ -155,6 +156,8 @@ func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
+
+	form.CheckField(validator.NotBlank(form.Name), "name", "This field cannot be blank")
 
 	// fields validations
 	// form.CheckField()
@@ -167,10 +170,23 @@ func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// insert user
+	err = app.users.Insert(form.Name, form.Email, form.Password)
+	if err != nil {
+		if errors.Is(err, models.ErrDuplicateEmail) {
+			form.AddFieldError("email", "Email address is already in use")
+			data := app.newTemplateData(r)
+			data.Form = form
+			app.render(w, r, http.StatusUnprocessableEntity, "signup.tmpl.html", data)
+		} else {
+			app.serverError(w, r, err)
 
-	// app.sessionManager.Put(r.Context(), "flash", "Welcome")
+		}
+		return
+	}
 
-	// http.Redirect(w, r, fmt.Sprintf("/snippetview/%d", id), http.StatusSeeOther)
+	app.sessionManager.Put(r.Context(), "flash", "Your signup was succeful")
+
+	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 
 }
 
